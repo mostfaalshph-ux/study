@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دفتر المشروع</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#12151b;
+    --bg-soft:#191d25;
+    --paper:#efe7d6;
+    --paper-dark:#e6dcc4;
+    --ink:#23262f;
+    --ink-soft:#6a6d78;
+    --mustard:#d6a62c;
+    --mint:#6e8f7c;
+    --marker:#c1442c;
+    --line:#d8cdb0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, #1c212b 0%, transparent 40%),
+      radial-gradient(circle at 85% 90%, #1a1f28 0%, transparent 40%);
+    font-family:'Tajawal',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    padding:32px 16px 80px;
+  }
+  h1,h2,h3,.brand{font-family:'Almarai',sans-serif;}
+  .wrap{max-width:880px;margin:0 auto;}
+
+  /* header */
+  header{text-align:center;margin-bottom:40px;color:#f2ede0;}
+  .brand{font-size:14px;letter-spacing:.5px;color:var(--mustard);font-weight:700;margin-bottom:10px;}
+  header h1{font-size:34px;color:#f7f3e8;margin:0 0 10px;font-weight:800;}
+  header p{color:#9aa0ad;font-size:15px;margin:0;max-width:480px;margin-inline:auto;line-height:1.7;}
+
+  /* step card container */
+  .step{
+    background:var(--paper);
+    border-radius:6px;
+    padding:26px 26px 30px;
+    margin-bottom:22px;
+    box-shadow:0 18px 40px -18px rgba(0,0,0,.55);
+    position:relative;
+    border:1px solid var(--paper-dark);
+  }
+  .step::before{
+    content:attr(data-step);
+    position:absolute;
+    top:-14px;
+    right:22px;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Almarai',sans-serif;
+    font-size:12px;
+    font-weight:700;
+    padding:5px 12px;
+    border-radius:4px;
+  }
+  .step h2{font-size:19px;margin:6px 0 18px;color:var(--ink);}
+
+  /* template picker */
+  .templates{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .tpl{
+    cursor:pointer;
+    background:#fbf8f0;
+    border:2px solid var(--paper-dark);
+    border-radius:6px;
+    padding:16px 14px;
+    text-align:center;
+    transition:transform .15s ease, border-color .15s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .tpl:hover{transform:translateY(-2px);}
+  .tpl .tab{
+    position:absolute;top:0;right:0;left:0;height:6px;
+  }
+  .tpl[data-type="poster"] .tab{background:var(--mustard);}
+  .tpl[data-type="case"] .tab{background:var(--marker);}
+  .tpl[data-type="summary"] .tab{background:var(--mint);}
+  .tpl .ic{font-size:26px;display:block;margin-bottom:8px;}
+  .tpl .name{font-weight:700;font-size:14.5px;}
+  .tpl .desc{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+  .tpl.active{border-color:var(--ink);background:#fff;}
+
+  /* inputs */
+  textarea, input[type=text]{
+    width:100%;
+    font-family:'Tajawal',sans-serif;
+    background:#fbf8f0;
+    border:1.5px solid var(--paper-dark);
+    border-radius:5px;
+    padding:12px 14px;
+    font-size:14.5px;
+    color:var(--ink);
+    resize:vertical;
+  }
+  textarea{min-height:150px;line-height:1.8;margin-bottom:14px;}
+  input[type=text]{margin-bottom:4px;}
+  label{display:block;font-size:13.5px;font-weight:700;margin-bottom:8px;color:var(--ink);}
+  .hint{font-size:12px;color:var(--ink-soft);margin:6px 0 16px;line-height:1.6;}
+
+  button.primary{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    font-family:'Almarai',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    padding:13px 26px;
+    border-radius:5px;
+    cursor:pointer;
+    width:100%;
+    transition:background .15s ease;
+  }
+  button.primary:hover{background:#3a3f4d;}
+  button.primary:disabled{background:#a9a49a;cursor:wait;}
+
+  .error{
+    background:#fbeae5;border:1px solid var(--marker);color:var(--marker);
+    padding:10px 14px;border-radius:5px;font-size:13.5px;margin-top:12px;display:none;
+  }
+
+  /* result card */
+  #resultStep{display:none;}
+  .paper-card{
+    background:#fbf8f0;
+    border:1px solid var(--paper-dark);
+    border-radius:6px;
+    padding:30px 28px;
+    position:relative;
+  }
+  .paper-card h3.doc-title{
+    font-size:22px;margin:0 0 18px;padding-bottom:14px;
+    border-bottom:2px solid var(--ink);
+    outline:none;
+  }
+  .field{margin-bottom:16px;}
+  .field .label{
+    font-size:11.5px;font-weight:700;color:var(--accent-color, var(--mustard));
+    letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;
+  }
+  .field .content{
+    font-size:14.5px;line-height:1.85;outline:none;
+    border-radius:3px;padding:4px 2px;
+  }
+  .field .content:focus{background:#fff6e0;}
+  .paper-card.layout-poster{
+    background:#fbf8f0;
+  }
+  .paper-card.layout-poster .doc-title{
+    text-align:center;
+    font-size:24px;
+    border-bottom:none;
+    padding-bottom:6px;
+  }
+  .poster-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-top:10px;
+  }
+  .poster-grid .field{
+    background:#fff;
+    border:1.5px solid var(--paper-dark);
+    border-top:5px solid var(--accent-color, var(--mustard));
+    border-radius:6px;
+    padding:14px 16px;
+    margin-bottom:0;
+  }
+  .poster-grid .field.wide{grid-column:1 / -1;}
+  .poster-grid .field .label{color:var(--accent-color, var(--mustard));font-size:13px;}
+  @media (max-width:640px){
+    .poster-grid{grid-template-columns:1fr;}
+  }
+  ul.points{margin:0;padding-inline-start:20px;}
+  ul.points li{margin-bottom:8px;line-height:1.7;}
+
+  /* customization controls */
+  .swatches{display:flex;gap:10px;}
+  .swatch{
+    width:34px;height:34px;border-radius:50%;cursor:pointer;
+    border:3px solid transparent;transition:transform .12s ease;
+  }
+  .swatch:hover{transform:scale(1.08);}
+  .swatch.active{border-color:var(--ink);}
+
+  .style-options{display:flex;flex-wrap:wrap;gap:8px;}
+  .style-opt{
+    cursor:pointer;background:#fbf8f0;border:1.5px solid var(--paper-dark);
+    border-radius:20px;padding:8px 16px;font-size:13px;font-weight:700;
+    transition:background .12s ease, border-color .12s ease;
+  }
+  .style-opt.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  /* icon poster layout */
+  .paper-card.layout-icons .poster-grid .field{
+    text-align:center;
+    padding-top:20px;
+  }
+  .paper-card.layout-icons .poster-grid .field .icon-circle{
+    width:44px;height:44px;border-radius:50%;
+    background:var(--accent-soft, #f7edd2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;margin:0 auto 10px;
+  }
+  .paper-card.layout-icons .poster-grid .field .label{
+    display:block;margin-bottom:8px;
+  }
+  .paper-card.layout-icons .poster-grid .field .content,
+  .paper-card.layout-icons .poster-grid .field ul.points{
+    text-align:right;
+  }
+
+  .actions{display:flex;gap:10px;margin-top:22px;}
+  .actions button{flex:1;}
+  button.secondary{
+    background:transparent;border:1.5px solid var(--ink);color:var(--ink);
+    font-family:'Almarai',sans-serif;font-weight:700;font-size:14px;
+    padding:11px 20px;border-radius:5px;cursor:pointer;
+  }
+
+  .loading{display:none;align-items:center;gap:10px;justify-content:center;padding:14px;color:var(--ink-soft);font-size:13.5px;}
+  .spinner{width:16px;height:16px;border:2.5px solid #d8cdb0;border-top-color:var(--ink);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  footer{text-align:center;color:#5c6270;font-size:12px;margin-top:36px;}
+
+  @media print{
+    body *{visibility:hidden;}
+    .paper-card, .paper-card *{visibility:visible;}
+    .paper-card{position:absolute;top:0;right:0;left:0;box-shadow:none;border:none;}
+    .actions,.brand,header,.step:not(#resultStep){display:none !important;}
+  }
+  @media (max-width:640px){
+    .templates{grid-template-columns:1fr;}
+    .actions{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">دفتر المشروع</div>
+    <h1>نظّم أبحاثك في قالب جاهز</h1>
+    <p>الصق نص البحث اللي جبته من Google Scholar، واختار القالب، وهو يستخرج ويلخص وينسق الملحة كلها.</p>
+  </header>
+
+  <div class="step" data-step="١">
+    <h2>اختار نوع المستند</h2>
+    <div class="templates" id="templates">
+      <div class="tpl" data-type="poster">
+        <div class="tab"></div>
+        <span class="ic">📋</span>
+        <div class="name">بوستر بحث علمي</div>
+        <div class="desc">مقدمة، هدف، طريقة، نتائج، خلاصة</div>
+      </div>
+      <div class="tpl" data-type="case">
+        <div class="tab"></div>
+        <span class="ic">🦷</span>
+        <div class="name">تقرير حالة سريرية</div>
+        <div class="desc">شكوى، تاريخ، فحص، تشخيص، علاج</div>
+      </div>
+      <div class="tpl" data-type="summary">
+        <div class="tab"></div>
+        <span class="ic">📝</span>
+        <div class="name">ملخص للعرض التقديمي</div>
+        <div class="desc">نقط رئيسية + خلاصة سريعة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-step="٢">
+    <h2>خصّص الشكل</h2>
+
+    <label>اختار لون الثيم</label>
+    <div class="swatches" id="swatches">
+      <div class="swatch active" data-accent="#d6a62c" data-accent-soft="#f7edd2" style="background:#d6a62c;"></div>
+      <div class="swatch" data-accent="#4f7a5c" data-accent-soft="#e3ede4" style="background:#4f7a5c;"></div>
+      <div class="swatch" data-accent="#2b6ca3" data-accent-soft="#e1ebf3" style="background:#2b6ca3;"></div>
+      <div class="swatch" data-accent="#c1516f" data-accent-soft="#f6e2e7" style="background:#c1516f;"></div>
+      <div class="swatch" data-accent="#8a5cb5" data-accent-soft="#ece2f3" style="background:#8a5cb5;"></div>
+    </div>
+
+    <label style="margin-top:16px;">أسلوب الكتابة</label>
+    <div class="style-options" id="styleOptions">
+      <div class="style-opt active" data-style="summarize">تلخيص بأسلوب مبسط</div>
+      <div class="style-opt" data-style="quote">اقتباس شبه حرفي من النص</div>
+      <div class="style-opt" data-style="mix">مزيج (تلخيص + مصطلحات دقيقة)</div>
+    </div>
+
+    <div id="posterLayoutRow" style="display:none;">
+      <label style="margin-top:16px;">شكل تصميم البوستر</label>
+      <div class="style-options" id="layoutOptions">
+        <div class="style-opt active" data-layout="grid">كروت متجاورة</div>
+        <div class="style-opt" data-layout="icons">كروت بأيقونات</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" data-step="٣">
+    <h2>مفتاح Gemini (مجاني)</h2>
+    <label for="apiKey">API Key بتاعك من Google AI Studio</label>
+    <input type="text" id="apiKey" placeholder="الصق المفتاح هنا (بيتحفظ في المتصفح بتاعك بس)">
+    <div class="hint">
+      مش عندك مفتاح؟ روح <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>،
+      سجّل دخول بحساب Google، واعمل "Create API key" — مجاني ومش محتاج بطاقة بنكية.
+      المفتاح بيتحفظ في متصفحك بس، مش بيتبعت لأي حد غير Google مباشرة.
+    </div>
+  </div>
+
+  <div class="step" data-step="٤">
+    <h2>الصق نص البحث</h2>
+    <label for="pdfFile">ارفع ملف PDF (اختياري) — أو الصق النص تحت مباشرة</label>
+    <input type="file" id="pdfFile" accept="application/pdf" style="margin-bottom:14px;">
+    <div class="loading" id="pdfLoadingRow"><div class="spinner"></div> بيستخرج النص من الـ PDF...</div>
+    <div class="hint">لو رفعت PDF هيتملى النص تلقائيًا تحت وتقدر تعدّله.</div>
+    <label for="sourceText">النص (Abstract أو الورقة كاملة)</label>
+    <textarea id="sourceText" placeholder="الصق هنا النص اللي جبته من Google Scholar..."></textarea>
+    <label for="focusInput">إيه اللي محتاج يبان واضح في المستند ده؟</label>
+    <input type="text" id="focusInput" placeholder="مثلاً: ده لمادة اختبارات، ركّز على الأرقام والنتائج بس">
+    <div class="hint">جاوب هنا قبل ما تكمل — إجابتك بتوجّه الذكاء الاصطناعي يركّز صح.</div>
+    <button class="primary" id="extractBtn">استخرج واملأ القالب</button>
+    <div class="loading" id="loadingRow"><div class="spinner"></div> بيحلل النص دلوقتي...</div>
+    <div class="error" id="errorBox"></div>
+  </div>
+
+  <div class="step" data-step="٥" id="resultStep">
+    <h2>القالب جاهز — قابل للتعديل</h2>
+    <div class="paper-card" id="paperCard"></div>
+    <div class="actions">
+      <button class="secondary" id="regenBtn">إعادة التحليل</button>
+      <button class="primary" id="printBtn">تحميل / طباعة PDF</button>
+    </div>
+  </div>
+
+  <footer>تقدر تعدّل أي جزء في القالب بالضغط عليه مباشرة قبل التحميل.</footer>
+</div>
+
+<script>
+const templates = document.querySelectorAll('.tpl');
+let selectedType = 'poster';
+let selectedAccent = '#d6a62c';
+let selectedAccentSoft = '#f7edd2';
+let selectedWritingStyle = 'summarize';
+let selectedLayout = 'grid';
+
+const posterLayoutRow = document.getElementById('posterLayoutRow');
+
+templates.forEach(t=>{
+  t.addEventListener('click', ()=>{
+    templates.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    selectedType = t.dataset.type;
+    posterLayoutRow.style.display = (selectedType === 'poster') ? 'block' : 'none';
+  });
+});
+templates[0].classList.add('active');
+
+document.querySelectorAll('#swatches .swatch').forEach(s=>{
+  s.addEventListener('click', ()=>{
+    document.querySelectorAll('#swatches .swatch').forEach(x=>x.classList.remove('active'));
+    s.classList.add('active');
+    selectedAccent = s.dataset.accent;
+    selectedAccentSoft = s.dataset.accentSoft;
+  });
+});
+
+document.querySelectorAll('#styleOptions .style-opt').forEach(o=>{
+  o.addEventListener('click', ()=>{
+    document.querySelectorAll('#styleOptions .style-opt').forEach(x=>x.classList.remove('active'));
+    o.classList.add('active');
+    selectedWritingStyle = o.dataset.style;
+  });
+});
+
+document.querySelectorAll('#layoutOptions .style-opt').forEach(o=>{
+  o.addEventListener('click', ()=>{
+    document.querySelectorAll('#layoutOptions .style-opt').forEach(x=>x.classList.remove('active'));
+    o.classList.add('active');
+    selectedLayout = o.dataset.layout;
+  });
+});
+
+const writingStyleText = {
+  summarize: 'لخّص الأفكار بأسلوبك وبكلمات مبسطة وواضحة، من غير ما تنسخ جمل من النص الأصلي.',
+  quote: 'حافظ على المصطلحات والعبارات العلمية الدقيقة زي ما هي في النص الأصلي قدر الإمكان.',
+  mix: 'لخّص بأسلوب مبسط لكن حافظ على المصطلحات العلمية والأرقام الدقيقة زي ما هي.'
+};
+
+const fieldIcons = {
+  intro:'📖', objective:'🎯', methods:'🔬', results:'📊', conclusion:'✅',
+  chief_complaint:'🗣️', history:'📋', examination:'🔎', diagnosis:'🩺', treatment:'💊', discussion:'💬',
+  key_points:'📌'
+};
+
+const schemas = {
+  poster: {
+    fields: ['title','intro','objective','methods','results','conclusion'],
+    labels: {title:'العنوان', intro:'المقدمة', objective:'الهدف', methods:'الطريقة', results:'النتائج', conclusion:'الخلاصة'},
+    color:'poster'
+  },
+  case: {
+    fields: ['title','chief_complaint','history','examination','diagnosis','treatment','discussion'],
+    labels: {title:'عنوان الحالة', chief_complaint:'الشكوى الرئيسية', history:'التاريخ المرضي', examination:'الفحص', diagnosis:'التشخيص', treatment:'خطة العلاج', discussion:'المناقشة'},
+    color:'case'
+  },
+  summary: {
+    fields: ['title','key_points','conclusion'],
+    labels: {title:'العنوان', key_points:'أهم النقاط', conclusion:'الخلاصة'},
+    color:'summary'
+  }
+};
+
+function buildPrompt(type, text, focus){
+  const schema = schemas[type];
+  const fieldList = schema.fields.map(f=> f==='key_points' ? `"${f}": ["نقطة 1","نقطة 2","..."]` : `"${f}": "نص مختصر"`).join(',\n  ');
+  const focusLine = `ركّز بشكل خاص على: ${focus}`;
+  const styleLine = writingStyleText[selectedWritingStyle];
+  return `انت مساعد أكاديمي. اقرأ النص العلمي التالي ولخّصه واملأ القالب بصيغة JSON فقط، بدون أي مقدمة أو علامات markdown أو أي نص خارج الـ JSON.
+${focusLine}
+أسلوب الكتابة المطلوب: ${styleLine}
+
+النص:
+"""
+${text}
+"""
+
+أرجع JSON بالضبط بهذا الشكل (بالعربية، مختصر وواضح، ومناسب لطالب جامعي):
+{
+  ${fieldList}
+}`;
+}
+
+const extractBtn = document.getElementById('extractBtn');
+const regenBtn = document.getElementById('regenBtn');
+const printBtn = document.getElementById('printBtn');
+const loadingRow = document.getElementById('loadingRow');
+const errorBox = document.getElementById('errorBox');
+const resultStep = document.getElementById('resultStep');
+const paperCard = document.getElementById('paperCard');
+
+async function setupPdfWorker(){
+  const workerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  try{
+    const resp = await fetch(workerUrl);
+    const code = await resp.text();
+    const blob = new Blob([code], { type: 'application/javascript' });
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+  }catch(e){
+    console.error('worker setup failed, falling back to direct URL', e);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+  }
+}
+setupPdfWorker();
+
+const pdfFileInput = document.getElementById('pdfFile');
+const pdfLoadingRow = document.getElementById('pdfLoadingRow');
+const sourceTextArea = document.getElementById('sourceText');
+
+pdfFileInput.addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  errorBox.style.display = 'none';
+  pdfLoadingRow.style.display = 'flex';
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n\n';
+    }
+    sourceTextArea.value = fullText.trim();
+  }catch(err){
+    console.error(err);
+    errorBox.textContent = 'مقدرش أقرأ الملف ده. جرّب PDF تاني أو الصق النص يدويًا.';
+    errorBox.style.display = 'block';
+  }finally{
+    pdfLoadingRow.style.display = 'none';
+  }
+});
+
+const apiKeyInput = document.getElementById('apiKey');
+apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+apiKeyInput.addEventListener('change', ()=>{
+  localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+});
+
+async function runExtraction(){
+  const text = document.getElementById('sourceText').value.trim();
+  const focus = document.getElementById('focusInput').value.trim();
+  const apiKey = apiKeyInput.value.trim();
+  errorBox.style.display = 'none';
+
+  if(!apiKey){
+    errorBox.textContent = 'محتاج تحط مفتاح Gemini الأول (خطوة ٣).';
+    errorBox.style.display = 'block';
+    return;
+  }
+  if(!focus){
+    errorBox.textContent = 'جاوب على سؤال "إيه اللي محتاج يبان واضح" الأول، عشان النتيجة تطلع مظبوطة.';
+    errorBox.style.display = 'block';
+    return;
+  }
+  if(!text){
+    errorBox.textContent = 'محتاج تلصق نص البحث الأول.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  extractBtn.disabled = true;
+  loadingRow.style.display = 'flex';
+  resultStep.style.display = 'none';
+
+  try{
+    const prompt = buildPrompt(selectedType, text, focus);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+    const data = await response.json();
+    if(data.error){
+      throw new Error(data.error.message || 'API error');
+    }
+    const raw = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('').trim() || '';
+    const cleaned = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(cleaned);
+    renderCard(selectedType, parsed);
+    resultStep.style.display = 'block';
+    resultStep.scrollIntoView({behavior:'smooth', block:'start'});
+  }catch(err){
+    console.error(err);
+    errorBox.textContent = 'حصل خطأ أثناء التحليل. تأكد إن المفتاح صح، أو جرّب تقصّر النص شوية.';
+    errorBox.style.display = 'block';
+  }finally{
+    extractBtn.disabled = false;
+    loadingRow.style.display = 'none';
+  }
+}
+
+function renderCard(type, dataObj){
+  const schema = schemas[type];
+  const useIcons = (type === 'poster' && selectedLayout === 'icons');
+  paperCard.className = 'paper-card' + (type === 'poster' ? ' layout-poster' : '') + (useIcons ? ' layout-icons' : '');
+  paperCard.style.setProperty('--accent-color', selectedAccent);
+  paperCard.style.setProperty('--accent-soft', selectedAccentSoft);
+
+  let html = `<h3 class="doc-title" contenteditable="true">${escapeHtml(dataObj.title || '')}</h3>`;
+
+  const fieldsHtml = schema.fields.map(f=>{
+    if(f === 'title') return '';
+    const label = schema.labels[f];
+    const wideClass = (type === 'poster' && (f === 'intro' || f === 'conclusion')) ? ' wide' : '';
+    const iconSpan = useIcons ? `<div class="icon-circle">${fieldIcons[f] || '•'}</div>` : '';
+    if(f === 'key_points'){
+      const items = Array.isArray(dataObj[f]) ? dataObj[f] : [];
+      return `<div class="field${wideClass}" data-color="${schema.color}">
+        ${iconSpan}
+        <div class="label">${label}</div>
+        <ul class="points" contenteditable="true">
+          ${items.map(p=>`<li>${escapeHtml(p)}</li>`).join('')}
+        </ul>
+      </div>`;
+    }
+    return `<div class="field${wideClass}" data-color="${schema.color}">
+      ${iconSpan}
+      <div class="label">${label}</div>
+      <div class="content" contenteditable="true">${escapeHtml(dataObj[f] || '')}</div>
+    </div>`;
+  }).join('');
+
+  html += type === 'poster' ? `<div class="poster-grid">${fieldsHtml}</div>` : fieldsHtml;
+  paperCard.innerHTML = html;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+extractBtn.addEventListener('click', runExtraction);
+regenBtn.addEventListener('click', runExtraction);
+printBtn.addEventListener('click', ()=> window.print());
+</script>
+</body>
+</html>
