@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>اختبار GPS بسيط</title>
+</head>
+<body style="font-family:sans-serif; padding:24px; text-align:center;">
+
+<h2>اختبار الموقع (بدون أي كود إضافي)</h2>
+<button id="btn" style="padding:16px 24px; font-size:18px;">اطلب موقعي دلوقتي</button>
+<p id="result" style="margin-top:20px; font-size:16px; white-space:pre-wrap;"></p>
+
+<script>
+document.getElementById('btn').addEventListener('click', () => {
+  const result = document.getElementById('result');
+  result.textContent = 'جاري الطلب...';
+
+  if(!navigator.geolocation){
+    result.textContent = 'المتصفح مش بيدعم geolocation أصلاً';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      result.textContent =
+        'نجح ✅\n' +
+        'خط العرض: ' + pos.coords.latitude + '\n' +
+        'خط الطول: ' + pos.coords.longitude;
+    },
+    (err) => {
+      result.textContent =
+        'فشل ❌\n' +
+        'كود الخطأ: ' + err.code + '\n' +
+        'الرسالة: ' + err.message;
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+});
+</script>
+
+</body>
+</html>
